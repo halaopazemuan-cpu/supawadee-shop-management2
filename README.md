@@ -1,1 +1,0 @@
-# supawadee-shop-management2
