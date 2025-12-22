@@ -1,0 +1,1509 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบจัดการข้อมูลสินค้า - ร้านของใช้และเครื่องสำอาง</title>
+
+  <!-- Supabase JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Font Awesome สำหรับไอคอน -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    :root {
+      --primary: #d63384;
+      --secondary: #9c27b0;
+      --light-pink: #fce7f3;
+      --light-purple: #f3e8fd;
+      --gray: #6c757d;
+      --light-gray: #f8f9fa;
+      --dark-gray: #343a40;
+      --white: #ffffff;
+      --border-radius: 12px;
+      --box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+    }
+    
+    * { 
+      box-sizing: border-box; 
+      transition: all 0.3s ease; 
+    }
+    
+    body { 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+      margin:0; 
+      background: linear-gradient(135deg, var(--light-pink), var(--light-purple)); 
+      color:#333; 
+      line-height:1.6; 
+      min-height: 100vh;
+      padding: 20px 0;
+    }
+    
+    .container { 
+      max-width: 1400px; 
+      margin: 0 auto; 
+      background: #fff; 
+      padding: 0; 
+      border-radius: var(--border-radius); 
+      box-shadow: var(--box-shadow); 
+      overflow: hidden;
+    }
+    
+    /* Header */
+    .header-section {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: white;
+      padding: 20px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    
+    .header-title {
+      margin: 0;
+      font-weight: 700;
+      font-size: 28px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .header-title i {
+      font-size: 32px;
+    }
+    
+    .header-subtitle {
+      margin: 5px 0 0 0;
+      font-size: 16px;
+      opacity: 0.9;
+    }
+    
+    /* Toolbar */
+    .toolbar {
+      background: var(--light-gray);
+      padding: 15px 30px;
+      border-bottom: 1px solid #e0e0e0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+    
+    .toolbar-left, .toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    
+    .search-container {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    
+    .search-input {
+      padding: 10px 15px 10px 40px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      width: 250px;
+      font-size: 14px;
+    }
+    
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      color: var(--gray);
+    }
+    
+    /* Buttons */
+    button { 
+      padding: 10px 18px; 
+      margin:0; 
+      cursor:pointer; 
+      border:none; 
+      border-radius:8px; 
+      font-weight:600; 
+      font-size:14px; 
+      display:inline-flex; 
+      align-items:center; 
+      justify-content:center; 
+      gap: 8px;
+      transition: all 0.3s ease;
+    }
+    
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .primary { 
+      background:linear-gradient(to right, var(--primary), var(--secondary)); 
+      color:white; 
+    }
+    
+    .success { 
+      background:linear-gradient(to right,#28a745,#20c997); 
+      color:white; 
+    }
+    
+    .warning { 
+      background:linear-gradient(to right,#fd7e14,#ffc107); 
+      color:white; 
+    }
+    
+    .danger { 
+      background:linear-gradient(to right,#dc3545,#e83e8c); 
+      color:white; 
+    }
+    
+    .info { 
+      background:linear-gradient(to right,#17a2b8,#6f42c1); 
+      color:white; 
+    }
+    
+    .secondary { 
+      background:linear-gradient(to right,#6c757d,#495057); 
+      color:white; 
+    }
+    
+    .light {
+      background: #f8f9fa;
+      color: var(--dark-gray);
+      border: 1px solid #dee2e6;
+    }
+    
+    /* Form Container */
+    .form-container {
+      padding: 25px 30px;
+      background: #f9f9f9;
+      border-bottom: 1px solid #e0e0e0;
+      display: none;
+    }
+    
+    .form-container.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .form-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid var(--primary);
+    }
+    
+    .form-header h3 {
+      margin: 0;
+      color: var(--primary);
+      font-size: 20px;
+    }
+    
+    .close-form {
+      background: transparent;
+      color: var(--gray);
+      padding: 5px;
+      font-size: 18px;
+    }
+    
+    .form-grid { 
+      display:grid; 
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+      gap:20px; 
+    }
+    
+    .form-group { 
+      margin-bottom: 15px; 
+    }
+    
+    .form-group.full-width {
+      grid-column: 1 / -1;
+    }
+    
+    input, select, textarea { 
+      width:100%; 
+      padding:12px 15px; 
+      border:1px solid #ddd; 
+      border-radius:8px; 
+      font-size:15px; 
+      background-color: var(--white);
+    }
+    
+    input:focus, select:focus, textarea:focus { 
+      outline:none; 
+      border-color:var(--primary); 
+      box-shadow:0 0 0 3px rgba(214, 51, 132, 0.2); 
+    }
+    
+    textarea { 
+      min-height: 120px; 
+      resize: vertical; 
+    }
+    
+    label { 
+      display: block; 
+      margin-bottom: 8px; 
+      font-weight: 600; 
+      color: #444; 
+    }
+    
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #e0e0e0;
+    }
+    
+    /* Image Preview */
+    .image-preview-container {
+      text-align: center;
+      margin: 15px 0;
+    }
+    
+    #preview { 
+      max-height: 150px; 
+      max-width: 200px;
+      border-radius: 8px;
+      border: 1px solid #e0e0e0;
+      padding: 5px;
+      background: white;
+      display: none;
+    }
+    
+    /* Table Container */
+    .table-container {
+      padding: 30px;
+      overflow-x: auto;
+    }
+    
+    table { 
+      width:100%; 
+      border-collapse:collapse; 
+      box-shadow:0 2px 8px rgba(0,0,0,0.05); 
+      border-radius:10px; 
+      overflow:hidden; 
+      border: 1px solid #e0e0e0;
+    }
+    
+    th { 
+      background: linear-gradient(to right,var(--primary),var(--secondary)); 
+      color:white; 
+      padding:15px; 
+      text-align:center; 
+      font-weight:600; 
+      font-size: 14px;
+    }
+    
+    td { 
+      padding:12px 15px; 
+      text-align:center; 
+      border-bottom:1px solid #eaeaea; 
+      font-size: 14px;
+    }
+    
+    tr:nth-child(even){
+      background-color:#f9f9f9;
+    }
+    
+    tr:hover { 
+      background-color:#f0f5ff; 
+    }
+    
+    .product-image {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 1px solid #e0e0e0;
+      cursor: pointer;
+      transition: transform 0.3s;
+    }
+    
+    .product-image:hover { 
+      transform:scale(1.05); 
+    }
+    
+    .action-buttons {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+    }
+    
+    .action-btn {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+    
+    /* Status Message */
+    .status-message { 
+      padding: 12px; 
+      border-radius: 8px; 
+      margin: 15px 0; 
+      text-align: center; 
+      display: none; 
+    }
+    
+    .success-msg { 
+      background-color: #d4edda; 
+      color: #155724; 
+      border: 1px solid #c3e6cb; 
+    }
+    
+    .error-msg { 
+      background-color: #f8d7da; 
+      color: #721c24; 
+      border: 1px solid #f5c6cb; 
+    }
+    
+    .warning-msg { 
+      background-color: #fff3cd; 
+      color: #856404; 
+      border: 1px solid #ffeeba; 
+    }
+    
+    /* Modal Styles */
+    .modal { 
+      display:none; 
+      position:fixed; 
+      z-index:1000; 
+      padding-top:50px; 
+      left:0; 
+      top:0; 
+      width:100%; 
+      height:100%; 
+      background:rgba(0,0,0,0.7); 
+      backdrop-filter: blur(5px); 
+    }
+    
+    .modal-content { 
+      margin:auto; 
+      display:block; 
+      max-width:80%; 
+      max-height:80%; 
+      border-radius:10px; 
+      box-shadow: 0 5px 25px rgba(0,0,0,0.3);
+    }
+    
+    .modal-close { 
+      position:absolute; 
+      top:20px; 
+      right:35px; 
+      color:#fff; 
+      font-size:40px; 
+      cursor:pointer; 
+      background: rgba(0,0,0,0.5);
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .settings-modal-content { 
+      background-color:#fff; 
+      margin:2% auto; 
+      padding:25px; 
+      border-radius:12px; 
+      width:80%; 
+      max-width:900px; 
+      max-height:90%;
+      overflow-y: auto;
+      box-shadow:0 5px 25px rgba(0,0,0,0.2); 
+    }
+    
+    .settings-section {
+      margin-bottom: 25px;
+      padding: 20px;
+      border: 1px solid #eaeaea;
+      border-radius: 8px;
+      background-color: #f9f9f9;
+    }
+    
+    .settings-section h3 {
+      margin-top: 0;
+      color: var(--primary);
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 10px;
+    }
+    
+    .settings-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 15px;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .settings-list {
+      max-height: 300px;
+      overflow-y: auto;
+      margin-top: 15px;
+    }
+    
+    .notification-rule {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      border: 1px solid #e0e0e0;
+    }
+    
+    .notification-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    
+    .notification-condition {
+      background: #f8f9fa;
+      padding: 12px;
+      border-radius: 6px;
+      margin: 10px 0;
+      border-left: 4px solid var(--primary);
+    }
+    
+    .condition-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #666;
+    }
+    
+    .empty-state i {
+      font-size: 60px;
+      color: #ddd;
+      margin-bottom: 20px;
+    }
+    
+    /* Responsive */
+    @media(max-width: 992px){
+      .toolbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      
+      .toolbar-left, .toolbar-right {
+        justify-content: center;
+      }
+      
+      .search-input {
+        width: 100%;
+      }
+      
+      .form-grid { 
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); 
+      }
+    }
+    
+    @media(max-width: 768px){
+      .container { 
+        margin:0 10px; 
+      }
+      
+      .header-section {
+        padding: 15px 20px;
+        flex-direction: column;
+        text-align: center;
+        gap: 15px;
+      }
+      
+      .toolbar {
+        padding: 15px 20px;
+      }
+      
+      .table-container {
+        padding: 20px;
+      }
+      
+      .settings-modal-content { 
+        width:95%; 
+        margin: 5% auto;
+      }
+      
+      .action-buttons {
+        flex-direction: column;
+        align-items: center;
+      }
+      
+      th, td {
+        padding: 10px 8px;
+        font-size: 13px;
+      }
+    }
+    
+    @media(max-width: 576px){
+      .form-grid { 
+        grid-template-columns:1fr; 
+      }
+      
+      .form-actions {
+        flex-direction: column;
+      }
+      
+      .form-actions button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Header Section -->
+  <div class="header-section">
+    <div>
+      <h1 class="header-title">
+        <i class="fas fa-store"></i>ระบบจัดการข้อมูลสินค้า
+      </h1>
+      <p class="header-subtitle">ร้านของใช้และเครื่องสำอางคุณสุภาวดี</p>
+    </div>
+    <button class="primary" onclick="window.location.href='admin.html'">
+      <i class="fas fa-arrow-left"></i>กลับสู่หน้าหลัก
+    </button>
+  </div>
+
+  <!-- Status Message -->
+  <div id="statusMessage" class="status-message"></div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <button class="success" id="showFormBtn">
+        <i class="fas fa-plus-circle"></i>เพิ่มสินค้าใหม่
+      </button>
+      <div class="search-container">
+        <i class="fas fa-search search-icon"></i>
+        <input type="text" id="searchInput" class="search-input" placeholder="ค้นหาสินค้า...">
+      </div>
+      <button class="light" onclick="clearSearch()">
+        <i class="fas fa-times"></i>ล้าง
+      </button>
+    </div>
+    
+    <div class="toolbar-right">
+      <button class="info" onclick="openSettingsModal()">
+        <i class="fas fa-cog"></i>ตั้งค่าระบบ
+      </button>
+      <button class="secondary" onclick="loadProducts()">
+        <i class="fas fa-sync-alt"></i>รีเฟรช
+      </button>
+    </div>
+  </div>
+
+  <!-- Form Container -->
+  <div class="form-container" id="formContainer">
+    <div class="form-header">
+      <h3 id="formTitle">เพิ่มสินค้าใหม่</h3>
+      <button class="close-form light" onclick="hideForm()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="product_code"><i class="fas fa-barcode"></i> รหัสสินค้า</label>
+        <input type="text" id="product_code" placeholder="รหัสสินค้าจะถูกสร้างอัตโนมัติ" readonly>
+      </div>
+      <div class="form-group">
+        <label for="name"><i class="fas fa-tag"></i> ชื่อสินค้า</label>
+        <input type="text" id="name" placeholder="กรอกชื่อสินค้า">
+      </div>
+      <div class="form-group">
+        <label for="price"><i class="fas fa-money-bill-wave"></i> ราคา (บาท)</label>
+        <input type="number" id="price" placeholder="กรอกราคา" min="0" step="0.01">
+      </div>
+      <div class="form-group">
+        <label for="stock_quantity"><i class="fas fa-boxes"></i> จำนวนในสต็อก</label>
+        <input type="number" id="stock_quantity" placeholder="กรอกจำนวน" min="0">
+      </div>
+      <div class="form-group">
+        <label for="category"><i class="fas fa-folder"></i> หมวดหมู่</label>
+        <select id="category"></select>
+      </div>
+      <div class="form-group">
+        <label for="type"><i class="fas fa-list"></i> ประเภทสินค้า</label>
+        <select id="type"></select>
+      </div>
+      <div class="form-group">
+        <label for="image"><i class="fas fa-image"></i> รูปภาพสินค้า</label>
+        <input type="file" id="image" accept="image/*" onchange="previewImage(event)">
+      </div>
+      
+      <div class="form-group full-width">
+        <label for="description"><i class="fas fa-align-left"></i> รายละเอียดสินค้า</label>
+        <textarea id="description" placeholder="กรอกรายละเอียดสินค้า"></textarea>
+      </div>
+    </div>
+    
+    <div class="image-preview-container">
+      <img id="preview" src="" alt="Preview">
+    </div>
+    
+    <div class="form-actions">
+      <button class="secondary" onclick="hideForm()">
+        <i class="fas fa-times"></i>ยกเลิก
+      </button>
+      <button class="success" id="addBtn" onclick="addItem()">
+        <i class="fas fa-save"></i>บันทึกสินค้า
+      </button>
+      <button class="warning" id="updateBtn" onclick="updateItem()" style="display:none;">
+        <i class="fas fa-edit"></i>อัพเดตสินค้า
+      </button>
+    </div>
+  </div>
+
+  <!-- Table Container -->
+  <div class="table-container">
+    <table id="dataTable">
+      <thead>
+        <tr>
+          <th width="100">รหัสสินค้า</th>
+          <th width="80">รูปภาพ</th>
+          <th>ชื่อสินค้า</th>
+          <th width="100">ราคา (บาท)</th>
+          <th width="100">จำนวน</th>
+          <th>หมวดหมู่</th>
+          <th width="150">ประเภท</th>
+          <th width="180">จัดการ</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        <!-- Data will be inserted here -->
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Image Modal -->
+<div id="imageModal" class="modal">
+  <span class="modal-close" onclick="closeModal()">&times;</span>
+  <img class="modal-content" id="modalImage">
+</div>
+
+<!-- Settings Modal -->
+<div id="settingsModal" class="modal">
+  <div class="settings-modal-content">
+    <span class="modal-close" onclick="closeSettingsModal()">&times;</span>
+    <h2 style="color: var(--primary); margin-top:0; display: flex; align-items: center; gap: 10px;">
+      <i class="fas fa-cog"></i>การตั้งค่าระบบ
+    </h2>
+    
+    <!-- Product Types Section -->
+    <div class="settings-section">
+      <h3><i class="fas fa-list"></i> จัดการประเภทสินค้า</h3>
+      <div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap: wrap;">
+        <input type="text" id="newTypeName" placeholder="ชื่อประเภท..." style="flex:1; min-width: 200px;">
+        <input type="text" id="newTypeCode" placeholder="รหัส..." style="width: 120px;">
+        <button class="success" onclick="addType()">
+          <i class="fas fa-plus"></i>เพิ่มประเภท
+        </button>
+      </div>
+      <div class="settings-list" id="typeList">
+        <!-- Type list will be inserted here -->
+      </div>
+    </div>
+    
+    <!-- Categories Section -->
+    <div class="settings-section">
+      <h3><i class="fas fa-folder"></i> จัดการหมวดหมู่</h3>
+      <div style="display:flex; gap:10px; margin-bottom:20px;">
+        <input type="text" id="newCategoryName" placeholder="ชื่อหมวดหมู่..." style="flex:1;">
+        <button class="success" onclick="addCategory()">
+          <i class="fas fa-plus"></i>เพิ่มหมวดหมู่
+        </button>
+      </div>
+      <div class="settings-list" id="categoryList">
+        <!-- Category list will be inserted here -->
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://rhcevdopguxtzupuxipk.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJoY2V2ZG9wZ3V4dHp1cHV4aXBrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4MjEyNDUsImV4cCI6MjA3MzM5NzI0NX0.Ot6aYOsIRgKjMWrbjPTEXuaWOqXYxYHiXKN1c7AhPyQ";
+const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let categories = [];
+let types = [];
+let dataList = [];
+let editId = null;
+let currentImageUrl = '';
+let notificationRules = [];
+
+// DOM Elements
+const formContainer = document.getElementById('formContainer');
+const formTitle = document.getElementById('formTitle');
+const showFormBtn = document.getElementById('showFormBtn');
+const addBtn = document.getElementById('addBtn');
+const updateBtn = document.getElementById('updateBtn');
+const tableBody = document.getElementById('tableBody');
+const searchInput = document.getElementById('searchInput');
+
+// Show form function
+function showForm(mode = 'add') {
+  formContainer.classList.add('active');
+  if (mode === 'add') {
+    formTitle.textContent = 'เพิ่มสินค้าใหม่';
+    addBtn.style.display = 'flex';
+    updateBtn.style.display = 'none';
+    clearForm();
+  }
+}
+
+// Hide form function
+function hideForm() {
+  formContainer.classList.remove('active');
+  clearForm();
+}
+
+// Show status message
+function showStatus(message, type) {
+  const statusElement = document.getElementById('statusMessage');
+  statusElement.textContent = message;
+  statusElement.className = 'status-message ' + type + '-msg';
+  statusElement.style.display = 'block';
+  
+  setTimeout(() => {
+    statusElement.style.display = 'none';
+  }, 6000);
+}
+
+// Load categories and dropdown
+async function loadCategories() {
+  try {
+    const res = await client.from("categories").select("*").order("name");
+    if (res.error) { 
+      console.error(res.error); 
+      showStatus('เกิดข้อผิดพลาดในการโหลดหมวดหมู่', 'error');
+      return; 
+    }
+    categories = res.data || [];
+
+    const select = document.getElementById("category");
+    select.innerHTML = '<option value="">เลือกหมวดหมู่</option>' + 
+      categories.map(c => `<option value="${c.id}">${c.name}</option>`).join("");
+
+    renderCategoryList();
+  } catch(err){ 
+    console.error(err); 
+    showStatus('เกิดข้อผิดพลาดในการโหลดหมวดหมู่', 'error');
+  }
+}
+
+// Load product types
+async function loadTypes() {
+  try {
+    const res = await client.from("types").select("*").order("name");
+    if (res.error) { 
+      if (res.error.code === 'PGRST205') {
+        const storedTypes = JSON.parse(localStorage.getItem('product_types') || '[]');
+        if (storedTypes.length === 0) {
+          const defaultTypes = [
+            { id: 1, name: 'เครื่องสำอาง', code: 'PA' },
+            { id: 2, name: 'ของใช้ส่วนตัว', code: 'CD' },
+            { id: 3, name: 'อุปกรณ์เสริม', code: 'AS' }
+          ];
+          localStorage.setItem('product_types', JSON.stringify(defaultTypes));
+          types = defaultTypes;
+        } else {
+          types = storedTypes;
+        }
+      } else {
+        console.error(res.error); 
+        return; 
+      }
+    } else {
+      types = res.data || [];
+    }
+    
+    renderTypeList();
+    renderTypeDropdown();
+  } catch(err){ 
+    console.error(err); 
+    const storedTypes = JSON.parse(localStorage.getItem('product_types') || '[]');
+    if (storedTypes.length > 0) {
+      types = storedTypes;
+    } else {
+      types = [
+        { id: 1, name: 'เครื่องสำอาง', code: 'PA' },
+        { id: 2, name: 'ของใช้ส่วนตัว', code: 'CD' },
+        { id: 3, name: 'อุปกรณ์เสริม', code: 'AS' }
+      ];
+      localStorage.setItem('product_types', JSON.stringify(types));
+    }
+    renderTypeList();
+    renderTypeDropdown();
+  }
+}
+
+// Render type dropdown
+function renderTypeDropdown() {
+  const select = document.getElementById("type");
+  select.innerHTML = '<option value="">เลือกประเภท</option>' + 
+    types.map(t => `<option value="${t.id}">${t.name} (${t.code})</option>`).join("");
+}
+
+// Render category list in settings
+function renderCategoryList(){
+  const listDiv = document.getElementById("categoryList");
+  listDiv.innerHTML = "";
+  if(categories.length===0){ 
+    listDiv.innerHTML='<div class="empty-state"><i class="fas fa-folder-open"></i><p>ไม่มีหมวดหมู่</p></div>'; 
+    return; 
+  }
+  categories.forEach(c=>{
+    const div = document.createElement("div");
+    div.className="settings-item";
+    div.innerHTML=`<span>${c.name}</span>
+      <div>
+        <button class="danger action-btn" onclick="deleteCategory(${c.id})" title="ลบหมวดหมู่"><i class="fas fa-trash"></i></button>
+      </div>`;
+    listDiv.appendChild(div);
+  });
+}
+
+// Render type list in settings
+function renderTypeList(){
+  const listDiv = document.getElementById("typeList");
+  listDiv.innerHTML = "";
+  if(types.length===0){ 
+    listDiv.innerHTML='<div class="empty-state"><i class="fas fa-list"></i><p>ไม่มีประเภทสินค้า</p></div>'; 
+    return; 
+  }
+  types.forEach(t=>{
+    const div = document.createElement("div");
+    div.className="settings-item";
+    div.innerHTML=`<span>${t.name} (${t.code})</span>
+      <div>
+        <button class="danger action-btn" onclick="deleteType(${t.id})" title="ลบประเภท"><i class="fas fa-trash"></i></button>
+      </div>`;
+    listDiv.appendChild(div);
+  });
+}
+
+// Open/close settings modal
+function openSettingsModal(){ 
+  document.getElementById("settingsModal").style.display="block"; 
+  loadTypes();
+  loadNotificationRules();
+}
+
+function closeSettingsModal(){ 
+  document.getElementById("settingsModal").style.display="none"; 
+}
+
+// Add category
+async function addCategory(){
+  const name = document.getElementById("newCategoryName").value.trim();
+  
+  if(!name){ 
+    showStatus('กรุณากรอกชื่อหมวดหมู่', 'error');
+    return; 
+  }
+  
+  const { data, error } = await client.from("categories").insert({name}).select();
+  if(error){ 
+    showStatus('เกิดข้อผิดพลาดในการเพิ่มหมวดหมู่: ' + (error.message || error), 'error');
+    console.error(error); 
+    return; 
+  }
+  
+  document.getElementById("newCategoryName").value="";
+  showStatus('เพิ่มหมวดหมู่เรียบร้อยแล้ว', 'success');
+  loadCategories();
+}
+
+// Delete category
+async function deleteCategory(id){
+  if(!confirm("ยืนยันการลบหมวดหมู่นี้? สินค้าที่อยู่ในหมวดหมู่นี้จะถูกกำหนดเป็นไม่มีหมวดหมู่")) return;
+  try {
+    const { error: errUpdate } = await client.from('products').update({ category_id: null }).eq('category_id', id);
+    if (errUpdate) {
+      console.error('Error setting products category to null before delete:', errUpdate);
+      showStatus('ไม่สามารถปรับสินค้าก่อนลบหมวดหมู่: ' + (errUpdate.message || errUpdate), 'error');
+      return;
+    }
+    const { error } = await client.from("categories").delete().eq("id",id);
+    if(error){ 
+      showStatus('เกิดข้อผิดพลาดในการลบหมวดหมู่: ' + (error.message || error), 'error');
+      console.error(error); 
+      return; 
+    }
+    showStatus('ลบหมวดหมู่เรียบร้อยแล้ว', 'success');
+    loadCategories();
+    loadProducts();
+  } catch (err) {
+    console.error(err);
+    showStatus('เกิดข้อผิดพลาดในการลบหมวดหมู่', 'error');
+  }
+}
+
+// Add product type
+async function addType(){
+  const name = document.getElementById("newTypeName").value.trim();
+  const code = document.getElementById("newTypeCode").value.trim().toUpperCase();
+  
+  if(!name || !code){ 
+    showStatus('กรุณากรอกชื่อประเภทและรหัส', 'error');
+    return; 
+  }
+  
+  try {
+    const { data, error } = await client.from("types").insert({name, code}).select();
+    if(error){ 
+      if (error.code === 'PGRST205') {
+        const storedTypes = JSON.parse(localStorage.getItem('product_types') || '[]');
+        const newType = {
+          id: Date.now(),
+          name: name,
+          code: code,
+          created_at: new Date().toISOString()
+        };
+        storedTypes.push(newType);
+        localStorage.setItem('product_types', JSON.stringify(storedTypes));
+        
+        document.getElementById("newTypeName").value="";
+        document.getElementById("newTypeCode").value="";
+        showStatus('เพิ่มประเภทเรียบร้อยแล้ว (เก็บข้อมูลชั่วคราว)', 'success');
+        loadTypes();
+        return;
+      }
+      showStatus('เกิดข้อผิดพลาดในการเพิ่มประเภท: ' + (error.message || error), 'error');
+      console.error(error); 
+      return; 
+    }
+    
+    document.getElementById("newTypeName").value="";
+    document.getElementById("newTypeCode").value="";
+    showStatus('เพิ่มประเภทเรียบร้อยแล้ว', 'success');
+    loadTypes();
+  } catch (err) {
+    console.error(err);
+    showStatus('เกิดข้อผิดพลาดในการเพิ่มประเภท', 'error');
+  }
+}
+
+// Delete product type
+async function deleteType(id){
+  if(!confirm("ยืนยันการลบประเภทนี้?")) return;
+  try {
+    const { error } = await client.from("types").delete().eq("id",id);
+    if(error){ 
+      if (error.code === 'PGRST205' || error.code === '42P01') {
+        const storedTypes = JSON.parse(localStorage.getItem('product_types') || '[]');
+        const updatedTypes = storedTypes.filter(t => t.id !== id);
+        localStorage.setItem('product_types', JSON.stringify(updatedTypes));
+        showStatus('ลบประเภทเรียบร้อยแล้ว', 'success');
+        loadTypes();
+        return;
+      }
+      showStatus('เกิดข้อผิดพลาดในการลบประเภท: ' + (error.message || error), 'error');
+      console.error(error); 
+      return; 
+    }
+    showStatus('ลบประเภทเรียบร้อยแล้ว', 'success');
+    loadTypes();
+  } catch (err) {
+    console.error(err);
+    showStatus('เกิดข้อผิดพลาดในการลบประเภท', 'error');
+  }
+}
+
+// Image preview
+function previewImage(event){
+  const preview = document.getElementById("preview");
+  if (event.target.files && event.target.files[0]) {
+    preview.src = URL.createObjectURL(event.target.files[0]);
+    preview.style.display="block";
+  }
+}
+
+// Image modal functions
+function openModal(img){ 
+  const modal=document.getElementById("imageModal"); 
+  modal.style.display="block"; 
+  document.getElementById("modalImage").src=img.src; 
+}
+
+function closeModal(){ 
+  document.getElementById("imageModal").style.display="none"; 
+}
+
+// Upload image to Supabase storage
+async function uploadImage(file) {
+  try {
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      throw new Error('ขนาดไฟล์ต้องไม่เกิน 5MB');
+    }
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
+    const uploadRes = await client.storage.from('product-images').upload(fileName, file);
+    if (uploadRes.error) throw uploadRes.error;
+    const publicRes = await client.storage.from('product-images').getPublicUrl(uploadRes.data.path);
+    const publicUrl = publicRes?.data?.publicUrl || '';
+    return publicUrl;
+  } catch (error) {
+    console.error('Error uploading image:', error);
+    throw new Error(`อัพโหลดรูปภาพไม่สำเร็จ: ${error.message || error}`);
+  }
+}
+
+// สร้างรหัสสินค้าอัตโนมัติ
+async function generateProductCode() {
+  const typeSelect = document.getElementById("type");
+  const typeId = typeSelect.value;
+  
+  if (!typeId) {
+    document.getElementById("product_code").value = "";
+    return;
+  }
+  
+  const selectedType = types.find(t => t.id == typeId);
+  if (!selectedType) return;
+  
+  try {
+    // นับจำนวนสินค้าในประเภทนี้
+    const { count, error } = await client
+      .from('products')
+      .select('*', { count: 'exact', head: true })
+      .eq('type_id', typeId);
+    
+    if (error) {
+      console.error('Error counting products:', error);
+      return;
+    }
+    
+    // สร้างรหัส: รหัสประเภท + ลำดับ (เช่น PA001, CD012)
+    const nextNumber = (count || 0) + 1;
+    const paddedNumber = nextNumber.toString().padStart(3, '0');
+    const productCode = `${selectedType.code}${paddedNumber}`;
+    
+    document.getElementById("product_code").value = productCode;
+  } catch (err) {
+    console.error('Error generating product code:', err);
+  }
+}
+
+// Add new product
+async function addItem(){
+  const name = document.getElementById("name").value.trim();
+  const price = parseFloat(document.getElementById("price").value);
+  const stock_quantity = parseInt(document.getElementById("stock_quantity").value);
+  const description = document.getElementById("description").value.trim();
+  const category_id = document.getElementById("category").value;
+  const type_id = document.getElementById("type").value;
+  const product_code = document.getElementById("product_code").value;
+  const imageInput = document.getElementById("image");
+
+  if(!name || isNaN(price) || isNaN(stock_quantity) || !category_id || !type_id){
+    showStatus('กรุณากรอกข้อมูลให้ครบถ้วน', 'error');
+    return;
+  }
+
+  let image_url = "";
+
+  if(imageInput.files.length > 0){
+    try {
+      image_url = await uploadImage(imageInput.files[0]);
+    } catch (err) {
+      showStatus(err.message, 'error');
+      return;
+    }
+  }
+
+  try {
+    const { data, error } = await client.from('products').insert([{
+      name, price, stock: stock_quantity, description, category_id, type_id, image_url, product_code
+    }]).select();
+
+    if(error){
+      showStatus('เพิ่มสินค้าไม่สำเร็จ: ' + (error.message || error), 'error');
+      console.error(error);
+      return;
+    }
+
+    showStatus('เพิ่มสินค้าเรียบร้อยแล้ว', 'success');
+    hideForm();
+    loadProducts();
+  } catch (err) {
+    console.error(err);
+    showStatus('เกิดข้อผิดพลาดในการเพิ่มสินค้า: ' + err.message, 'error');
+  }
+}
+
+// Edit product
+async function editItem(id){
+  try {
+    const { data, error } = await client.from('products')
+      .select('*, categories(name)')
+      .eq('id', id)
+      .single();
+
+    if(error){
+      showStatus('ไม่พบสินค้าที่ต้องการแก้ไข: ' + (error.message || error), 'error');
+      console.error(error);
+      return;
+    }
+    
+    document.getElementById("product_code").value = data.product_code || '';
+    document.getElementById("name").value = data.name;
+    document.getElementById("price").value = data.price;
+    document.getElementById("stock_quantity").value = data.stock;
+    document.getElementById("description").value = data.description || '';
+    document.getElementById("category").value = data.category_id;
+    document.getElementById("type").value = data.type_id || '';
+    
+    if(data.image_url){
+      document.getElementById("preview").src = data.image_url;
+      document.getElementById("preview").style.display = "block";
+      currentImageUrl = data.image_url;
+    } else {
+      document.getElementById("preview").style.display = "none";
+      currentImageUrl = '';
+    }
+
+    formTitle.textContent = 'แก้ไขสินค้า';
+    addBtn.style.display = 'none';
+    updateBtn.style.display = 'flex';
+    
+    showForm('edit');
+    editId = id;
+    document.getElementById("name").focus();
+  } catch (err) {
+    console.error(err);
+    showStatus('เกิดข้อผิดพลาดในการโหลดข้อมูลสินค้า: ' + err.message, 'error');
+  }
+}
+
+// Update product
+async function updateItem(){
+  const name = document.getElementById("name").value.trim();
+  const price = parseFloat(document.getElementById("price").value);
+  const stock_quantity = parseInt(document.getElementById("stock_quantity").value);
+  const description = document.getElementById("description").value.trim();
+  const category_id = document.getElementById("category").value;
+  const type_id = document.getElementById("type").value;
+  const product_code = document.getElementById("product_code").value;
+  const imageInput = document.getElementById("image");
+
+  if(!name || isNaN(price) || isNaN(stock_quantity) || !category_id || !type_id){
+    showStatus('กรุณากรอกข้อมูลให้ครบถ้วน', 'error');
+    return;
+  }
+
+  let image_url = currentImageUrl;
+
+  if(imageInput.files.length > 0){
+    try {
+      image_url = await uploadImage(imageInput.files[0]);
+    } catch (err) {
+      showStatus(err.message, 'error');
+      return;
+    }
+  }
+
+  try {
+    const { data, error } = await client.from('products')
+      .update({
+        name, price, stock: stock_quantity, description, category_id, type_id, image_url, product_code, updated_at: new Date()
+      })
+      .eq('id', editId);
+
+    if(error){
+      showStatus('แก้ไขสินค้าไม่สำเร็จ: ' + (error.message || error), 'error');
+      console.error(error);
+      return;
+    }
+
+    showStatus('แก้ไขสินค้าเรียบร้อยแล้ว', 'success');
+    hideForm();
+    loadProducts();
+  } catch (err) {
+    console.error(err);
+    showStatus('เกิดข้อผิดพลาดในการแก้ไขสินค้า: ' + err.message, 'error');
+  }
+}
+
+// Delete product
+async function deleteItem(id){
+  if(!confirm("คุณต้องการลบสินค้านี้หรือไม่?")) return;
+  
+  try {
+    const { error } = await client.from('products').delete().eq('id', id);
+    if(error){ 
+      showStatus('ลบสินค้าไม่สำเร็จ: ' + (error.message || error), 'error');
+      console.error(error); 
+      return; 
+    }
+    showStatus('ลบสินค้าเรียบร้อยแล้ว', 'success');
+    loadProducts();
+  } catch (err) {
+    console.error(err);
+    showStatus('เกิดข้อผิดพลาดในการลบสินค้า: ' + err.message, 'error');
+  }
+}
+
+// Clear form
+function clearForm(){
+  document.getElementById("product_code").value = "";
+  document.getElementById("name").value = "";
+  document.getElementById("price").value = "";
+  document.getElementById("stock_quantity").value = "";
+  document.getElementById("description").value = "";
+  document.getElementById("category").selectedIndex = 0;
+  document.getElementById("type").selectedIndex = 0;
+  document.getElementById("image").value = "";
+  document.getElementById("preview").style.display = "none";
+  currentImageUrl = '';
+  editId = null;
+}
+
+// Load products from Supabase
+async function loadProducts(){
+  try {
+    const res = await client.from('products').select(`*, categories(name)`).order('created_at', { ascending: false });
+    if (res.error) {
+      showStatus('เกิดข้อผิดพลาดในการโหลดข้อมูลสินค้า: ' + (res.error.message || res.error), 'error');
+      return;
+    }
+    dataList = res.data || [];
+    renderProducts(dataList);
+  } catch (err) {
+    console.error(err);
+    showStatus('เกิดข้อผิดพลาดในการโหลดข้อมูลสินค้า: ' + err.message, 'error');
+  }
+}
+
+// Render products in table
+function renderProducts(products){
+  tableBody.innerHTML = "";
+  
+  if(products.length === 0){
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="8" style="text-align:center;padding:40px 20px;">
+          <div class="empty-state">
+            <i class="fas fa-box-open"></i>
+            <p>ไม่มีข้อมูลสินค้า</p>
+            <button class="success" onclick="showForm()" style="margin-top: 15px;">
+              <i class="fas fa-plus-circle"></i>เพิ่มสินค้าแรก
+            </button>
+          </div>
+        </td>
+      </tr>`;
+    return;
+  }
+  
+  // เรียงลำดับตามรหัสสินค้า
+  products.sort((a, b) => {
+    if (a.product_code && b.product_code) {
+      return a.product_code.localeCompare(b.product_code);
+    }
+    return 0;
+  });
+  
+  products.forEach((item, index)=>{
+    const type = types.find(t => t.id == item.type_id);
+    const typeName = type ? `${type.name} (${type.code})` : '-';
+    
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${item.product_code || '-'}</td>
+      <td>
+        ${item.image_url ? 
+          `<img src="${item.image_url}" class="product-image" onclick="openModal(this)">` : 
+          '<div style="width:60px;height:60px;background:#f0f0f0;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#999;"><i class="fas fa-image"></i></div>'}
+      </td>
+      <td style="text-align:left;">
+        <strong>${item.name}</strong>
+        ${item.description ? `<br><small style="color:#666;">${item.description.substring(0, 50)}${item.description.length > 50 ? '...' : ''}</small>` : ''}
+      </td>
+      <td>${Number(item.price).toFixed(2)}</td>
+      <td>
+        <span style="font-weight:bold; color:${item.stock < 10 ? '#dc3545' : item.stock < 20 ? '#fd7e14' : '#28a745'}">
+          ${item.stock}
+        </span>
+      </td>
+      <td>${item.categories?.name || '-'}</td>
+      <td>${typeName}</td>
+      <td>
+        <div class="action-buttons">
+          <button class="warning action-btn" onclick="editItem(${item.id})" title="แก้ไข">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="danger action-btn" onclick="deleteItem(${item.id})" title="ลบ">
+            <i class="fas fa-trash"></i>
+          </button>
+          <button class="info action-btn" onclick="viewDetails(${item.id})" title="ดูรายละเอียด">
+            <i class="fas fa-eye"></i>
+          </button>
+        </div>
+      </td>
+    `;
+    tableBody.appendChild(tr);
+  });
+}
+
+// View product details
+function viewDetails(id) {
+  const product = dataList.find(p => p.id === id);
+  if (product) {
+    const type = types.find(t => t.id == product.type_id);
+    const typeName = type ? `${type.name} (${type.code})` : '-';
+    
+    let details = `
+      <strong>รหัสสินค้า:</strong> ${product.product_code || '-'}<br>
+      <strong>ชื่อสินค้า:</strong> ${product.name}<br>
+      <strong>ราคา:</strong> ${Number(product.price).toFixed(2)} บาท<br>
+      <strong>จำนวนในสต็อก:</strong> ${product.stock}<br>
+      <strong>หมวดหมู่:</strong> ${product.categories?.name || '-'}<br>
+      <strong>ประเภท:</strong> ${typeName}<br>
+    `;
+    
+    if (product.description) {
+      details += `<strong>รายละเอียด:</strong><br>${product.description}`;
+    }
+    
+    alert(details);
+  }
+}
+
+// Search products
+function searchProducts(){
+  const searchText = searchInput.value.toLowerCase().trim();
+  if (!searchText) {
+    renderProducts(dataList);
+    return;
+  }
+  
+  const filteredProducts = dataList.filter(p =>
+    (p.name && p.name.toLowerCase().includes(searchText)) ||
+    (p.product_code && p.product_code.toLowerCase().includes(searchText)) ||
+    (p.description && p.description.toLowerCase().includes(searchText)) ||
+    (p.categories?.name && p.categories.name.toLowerCase().includes(searchText))
+  );
+  
+  renderProducts(filteredProducts);
+}
+
+// Clear search
+function clearSearch(){
+  searchInput.value = "";
+  renderProducts(dataList);
+}
+
+// ฟังก์ชันปรับปรุงรหัสสินค้าเก่าที่ไม่มีรหัส
+async function updateOldProductCodes() {
+  try {
+    // ดึงสินค้าทั้งหมดที่ไม่มีรหัส
+    const { data: products, error } = await client
+      .from('products')
+      .select('*')
+      .is('product_code', null);
+    
+    if (error) throw error;
+    
+    if (products.length === 0) return;
+    
+    let updatedCount = 0;
+    
+    // สร้างรหัสสำหรับแต่ละสินค้า
+    for (const product of products) {
+      const type = types.find(t => t.id == product.type_id);
+      if (!type) continue;
+      
+      // หาลำดับล่าสุดของประเภทนี้ (สินค้าที่มีรหัสแล้ว)
+      const { count, error: countError } = await client
+        .from('products')
+        .select('*', { count: 'exact', head: true })
+        .eq('type_id', product.type_id)
+        .not('product_code', 'is', null);
+      
+      if (countError) continue;
+      
+      const nextNumber = (count || 0) + 1;
+      const paddedNumber = nextNumber.toString().padStart(3, '0');
+      const productCode = `${type.code}${paddedNumber}`;
+      
+      // อัพเดตสินค้า
+      const { error: updateError } = await client
+        .from('products')
+        .update({ product_code: productCode })
+        .eq('id', product.id);
+      
+      if (!updateError) {
+        updatedCount++;
+      }
+    }
+    
+    if (updatedCount > 0) {
+      showStatus(`ปรับปรุงรหัสสินค้า ${updatedCount} รายการเรียบร้อย`, 'success');
+      loadProducts();
+    }
+  } catch (err) {
+    console.error('Error updating product codes:', err);
+  }
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+  // Event listeners
+  showFormBtn.addEventListener('click', () => showForm('add'));
+  
+  searchInput.addEventListener('input', () => {
+    if (searchInput.value.trim() === '') {
+      renderProducts(dataList);
+    } else {
+      searchProducts();
+    }
+  });
+  
+  searchInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      searchProducts();
+    }
+  });
+  
+  // เมื่อเลือกประเภทสินค้า ให้สร้างรหัสอัตโนมัติ
+  const typeSelect = document.getElementById("type");
+  if (typeSelect) {
+    typeSelect.addEventListener('change', generateProductCode);
+  }
+  
+  // Load initial data
+  loadCategories();
+  loadTypes();
+  loadProducts();
+  
+  // เรียกใช้ฟังก์ชันปรับปรุงรหัสสินค้าเก่า
+  setTimeout(() => {
+    updateOldProductCodes();
+  }, 2000);
+});
+</script>
+</body>
+</html>

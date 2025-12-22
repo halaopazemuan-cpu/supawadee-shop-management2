@@ -1,0 +1,291 @@
+<!--admin.html-->
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>หน้าโฮม</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #2f6a9a;
+      --primary-light: #4c6faf;
+      --primary-dark: #1b2d5e;
+      --accent: #FFC107;
+      --text-on-primary: #FFFFFF;
+      --text-primary: #212121;
+      --text-secondary: #757575;
+      --light-bg: #F5F5F5;
+      --card-bg: #FFFFFF;
+      --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    body {
+      background: var(--light-bg);
+      color: var(--text-primary);
+      line-height: 1.6;
+    }
+    
+    header {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: var(--text-on-primary);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      position: relative;
+    }
+    
+    .header-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .shop-name {
+      font-size: 28px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+    }
+    
+    .shop-name i {
+      margin-right: 15px;
+      font-size: 32px;
+    }
+    
+    .user-info {
+      display: flex;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.15);
+      padding: 10px 15px;
+      border-radius: 30px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .user-status {
+      display: flex;
+      align-items: center;
+      margin-right: 15px;
+      padding: 8px 15px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 20px;
+      font-weight: 600;
+    }
+    
+    .user-status i {
+      margin-right: 8px;
+      color: var(--accent);
+    }
+    
+    .admin-badge {
+      background: var(--accent);
+      color: var(--primary-dark);
+      padding: 4px 10px;
+      border-radius: 15px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-left: 8px;
+    }
+    
+    button.logout {
+      background: rgba(255, 255, 255, 0.3);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      transition: all 0.3s ease;
+    }
+    
+    button.logout:hover {
+      background: rgba(255, 255, 255, 0.4);
+      transform: translateY(-2px);
+    }
+    
+    button.logout i {
+      margin-right: 8px;
+    }
+    
+    .dashboard-title {
+      text-align: center;
+      margin: 30px 0;
+      color: var(--primary-dark);
+      font-size: 24px;
+      position: relative;
+    }
+    
+    .dashboard-title:after {
+      content: '';
+      display: block;
+      width: 60px;
+      height: 4px;
+      background: var(--accent);
+      margin: 10px auto;
+      border-radius: 2px;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 25px;
+      margin-top: 20px;
+    }
+    
+    .card {
+      background: var(--card-bg);
+      border-radius: 15px;
+      padding: 30px;
+      text-align: center;
+      box-shadow: var(--shadow);
+      transition: all 0.3s ease;
+      cursor: pointer;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+    }
+    
+    .card i {
+      font-size: 50px;
+      margin-bottom: 20px;
+      color: var(--primary);
+    }
+    
+    .card-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--primary-dark);
+      margin-bottom: 10px;
+    }
+    
+    .card-desc {
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+    
+    /* Responsive design */
+    @media (max-width: 768px) {
+      .header-content {
+        flex-direction: column;
+        text-align: center;
+      }
+      
+      .shop-name {
+        margin-bottom: 15px;
+      }
+      
+      .user-info {
+        flex-direction: column;
+        width: 100%;
+        max-width: 300px;
+      }
+      
+      .user-status {
+        margin-right: 0;
+        margin-bottom: 10px;
+        width: 100%;
+        justify-content: center;
+      }
+      
+      button.logout {
+        width: 100%;
+        justify-content: center;
+      }
+      
+      .card-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-content">
+      <div class="shop-name">
+        <i class="fas fa-store"></i>
+        <span>โปรแกรมบริหารจัดการร้านค้าคุณสภาวดี</span>
+      </div>
+      
+      <div class="user-info">
+        <div class="user-status">
+          <i class="fas fa-user-circle"></i>
+          <span>สถานะผู้ใช้งาน:</span>
+          <span class="admin-badge">Admin</span>
+        </div>
+        <button class="logout" onclick="logout()">
+          <i class="fas fa-sign-out-alt"></i>ออกจากระบบ
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    <h1 class="dashboard-title">เมนูการจัดการ</h1>
+    
+    <div class="card-grid">
+      <div class="card" onclick="goPage('manage_products.html')">
+        <i class="fas fa-edit"></i>
+        <div class="card-title">จัดการสินค้า</div>
+        <div class="card-desc">เพิ่ม แก้ไข ลบ สินค้าในระบบ</div>
+      </div>
+      
+      <div class="card" onclick="goPage('add_products.html')">
+        <i class="fas fa-boxes"></i>
+        <div class="card-title">คลังสินค้า</div>
+        <div class="card-desc">จัดการสต็อกและสินค้าคงเหลือ</div>
+      </div>
+      
+      <div class="card" onclick="goPage('sell_products.html')">
+        <i class="fas fa-shopping-cart"></i>
+        <div class="card-title">ขายสินค้า</div>
+        <div class="card-desc">ระบบขายสินค้าและออกใบเสร็จ</div>
+      </div>
+      
+      <div class="card" onclick="goPage('reports.html')">
+        <i class="fas fa-chart-line"></i>
+        <div class="card-title">รายงาน</div>
+        <div class="card-desc">ดูรายงานการขายและสถิติ</div>
+      </div>
+      
+      <div class="card" onclick="goPage('manage_users.html')">
+        <i class="fas fa-users"></i>
+        <div class="card-title">จัดการพนักงาน</div>
+        <div class="card-desc">เพิ่มและจัดการข้อมูลพนักงาน</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function goPage(page) {
+      window.location.href = page;
+    }
+    
+    function logout() {
+      if (confirm("คุณต้องการออกจากระบบใช่หรือไม่?")) {
+        alert("ออกจากระบบแล้ว");
+        window.location.href = "login.html";
+      }
+    }
+  </script>
+</body>
+</html>
