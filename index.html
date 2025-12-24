@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>เริ่มใช้งาน</title>
+  <title>โหลด</title>
 
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -22,20 +22,22 @@
       background-color: #e0e0e0;
       cursor: pointer;
     }
+    
+    .loading-text {
+      text-align: center;
+      font-size: 18px;
+      color: #333;
+    }
   </style>
 </head>
 
 <body>
-  <div class="login-container">
-    <div class="card" onclick="goPage('login')">
-      คลิกเพื่อไปหน้า Login
-    </div>
-  </div>
-
   <script>
-    function goPage(page) {
-      window.location.href = page + ".html";
-    }
+    window.onload = function() {
+      setTimeout(function() {
+        window.location.href = 'login.html';
+      }, 0); // หน่วงเวลา 0.5 วินาที
+    };
   </script>
 </body>
 </html>

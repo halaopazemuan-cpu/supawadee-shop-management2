@@ -638,12 +638,12 @@
         <input type="number" id="stock_quantity" placeholder="กรอกจำนวน" min="0">
       </div>
       <div class="form-group">
-        <label for="category"><i class="fas fa-folder"></i> หมวดหมู่</label>
-        <select id="category"></select>
+        <label for="type"><i class="fas fa-folder"></i> ประเภทสินค้า</label>
+        <select id="type"></select>
       </div>
       <div class="form-group">
-        <label for="type"><i class="fas fa-list"></i> ประเภทสินค้า</label>
-        <select id="type"></select>
+        <label for="category"><i class="fas fa-list"></i> หมวดหมู่/แบรนด์</label>
+        <select id="category"></select>
       </div>
       <div class="form-group">
         <label for="image"><i class="fas fa-image"></i> รูปภาพสินค้า</label>
@@ -683,8 +683,8 @@
           <th>ชื่อสินค้า</th>
           <th width="100">ราคา (บาท)</th>
           <th width="100">จำนวน</th>
-          <th>หมวดหมู่</th>
-          <th width="150">ประเภท</th>
+          <th>ประเภท</th>
+          <th width="150">หมวดหมู่/แบรนด์</th>
           <th width="180">จัดการ</th>
         </tr>
       </thead>
@@ -711,10 +711,9 @@
     
     <!-- Product Types Section -->
     <div class="settings-section">
-      <h3><i class="fas fa-list"></i> จัดการประเภทสินค้า</h3>
+      <h3><i class="fas fa-folder"></i> จัดการประเภทสินค้า</h3>
       <div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap: wrap;">
-        <input type="text" id="newTypeName" placeholder="ชื่อประเภท..." style="flex:1; min-width: 200px;">
-        <input type="text" id="newTypeCode" placeholder="รหัส..." style="width: 120px;">
+        <input type="text" id="newTypeName" placeholder="ชื่อประเภทสินค้า..." style="flex:1; min-width: 200px;">
         <button class="success" onclick="addType()">
           <i class="fas fa-plus"></i>เพิ่มประเภท
         </button>
@@ -726,9 +725,10 @@
     
     <!-- Categories Section -->
     <div class="settings-section">
-      <h3><i class="fas fa-folder"></i> จัดการหมวดหมู่</h3>
+      <h3><i class="fas fa-list"></i> จัดการหมวดหมู่/แบรนด์</h3>
       <div style="display:flex; gap:10px; margin-bottom:20px;">
         <input type="text" id="newCategoryName" placeholder="ชื่อหมวดหมู่..." style="flex:1;">
+        <input type="text" id="newCategoryCode" placeholder="รหัส..." style="width: 120px;">
         <button class="success" onclick="addCategory()">
           <i class="fas fa-plus"></i>เพิ่มหมวดหมู่
         </button>
@@ -746,8 +746,8 @@ const SUPABASE_URL = "https://rhcevdopguxtzupuxipk.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJoY2V2ZG9wZ3V4dHp1cHV4aXBrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4MjEyNDUsImV4cCI6MjA3MzM5NzI0NX0.Ot6aYOsIRgKjMWrbjPTEXuaWOqXYxYHiXKN1c7AhPyQ";
 const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-let categories = [];
-let types = [];
+let categories = []; // หมวดหมู่/แบรนด์ (จากตาราง categories)
+let types = [];     // ประเภทสินค้า (จากตาราง type)
 let dataList = [];
 let editId = null;
 let currentImageUrl = '';
@@ -791,7 +791,29 @@ function showStatus(message, type) {
   }, 6000);
 }
 
-// Load categories and dropdown
+// Load product types (ประเภทสินค้า) - จากตาราง type
+async function loadTypes() {
+  try {
+    const res = await client.from("type").select("*").order("name");
+    if (res.error) { 
+      console.error(res.error); 
+      showStatus('เกิดข้อผิดพลาดในการโหลดประเภทสินค้า', 'error');
+      return; 
+    }
+    types = res.data || [];
+
+    const select = document.getElementById("type");
+    select.innerHTML = '<option value="">เลือกประเภทสินค้า</option>' + 
+      types.map(t => `<option value="${t.id}">${t.name}</option>`).join("");
+
+    renderTypeList();
+  } catch(err){ 
+    console.error(err); 
+    showStatus('เกิดข้อผิดพลาดในการโหลดประเภทสินค้า', 'error');
+  }
+}
+
+// Load categories (หมวดหมู่/แบรนด์) - จากตาราง categories
 async function loadCategories() {
   try {
     const res = await client.from("categories").select("*").order("name");
@@ -803,8 +825,8 @@ async function loadCategories() {
     categories = res.data || [];
 
     const select = document.getElementById("category");
-    select.innerHTML = '<option value="">เลือกหมวดหมู่</option>' + 
-      categories.map(c => `<option value="${c.id}">${c.name}</option>`).join("");
+    select.innerHTML = '<option value="">เลือกหมวดหมู่/แบรนด์</option>' + 
+      categories.map(c => `<option value="${c.id}">${c.name}${c.code ? ` (${c.code})` : ''}</option>`).join("");
 
     renderCategoryList();
   } catch(err){ 
@@ -813,57 +835,23 @@ async function loadCategories() {
   }
 }
 
-// Load product types
-async function loadTypes() {
-  try {
-    const res = await client.from("types").select("*").order("name");
-    if (res.error) { 
-      if (res.error.code === 'PGRST205') {
-        const storedTypes = JSON.parse(localStorage.getItem('product_types') || '[]');
-        if (storedTypes.length === 0) {
-          const defaultTypes = [
-            { id: 1, name: 'เครื่องสำอาง', code: 'PA' },
-            { id: 2, name: 'ของใช้ส่วนตัว', code: 'CD' },
-            { id: 3, name: 'อุปกรณ์เสริม', code: 'AS' }
-          ];
-          localStorage.setItem('product_types', JSON.stringify(defaultTypes));
-          types = defaultTypes;
-        } else {
-          types = storedTypes;
-        }
-      } else {
-        console.error(res.error); 
-        return; 
-      }
-    } else {
-      types = res.data || [];
-    }
-    
-    renderTypeList();
-    renderTypeDropdown();
-  } catch(err){ 
-    console.error(err); 
-    const storedTypes = JSON.parse(localStorage.getItem('product_types') || '[]');
-    if (storedTypes.length > 0) {
-      types = storedTypes;
-    } else {
-      types = [
-        { id: 1, name: 'เครื่องสำอาง', code: 'PA' },
-        { id: 2, name: 'ของใช้ส่วนตัว', code: 'CD' },
-        { id: 3, name: 'อุปกรณ์เสริม', code: 'AS' }
-      ];
-      localStorage.setItem('product_types', JSON.stringify(types));
-    }
-    renderTypeList();
-    renderTypeDropdown();
+// Render type list in settings
+function renderTypeList(){
+  const listDiv = document.getElementById("typeList");
+  listDiv.innerHTML = "";
+  if(types.length===0){ 
+    listDiv.innerHTML='<div class="empty-state"><i class="fas fa-folder-open"></i><p>ไม่มีประเภทสินค้า</p></div>'; 
+    return; 
   }
-}
-
-// Render type dropdown
-function renderTypeDropdown() {
-  const select = document.getElementById("type");
-  select.innerHTML = '<option value="">เลือกประเภท</option>' + 
-    types.map(t => `<option value="${t.id}">${t.name} (${t.code})</option>`).join("");
+  types.forEach(t=>{
+    const div = document.createElement("div");
+    div.className="settings-item";
+    div.innerHTML=`<span>${t.name}</span>
+      <div>
+        <button class="danger action-btn" onclick="deleteType(${t.id})" title="ลบประเภท"><i class="fas fa-trash"></i></button>
+      </div>`;
+    listDiv.appendChild(div);
+  });
 }
 
 // Render category list in settings
@@ -871,34 +859,15 @@ function renderCategoryList(){
   const listDiv = document.getElementById("categoryList");
   listDiv.innerHTML = "";
   if(categories.length===0){ 
-    listDiv.innerHTML='<div class="empty-state"><i class="fas fa-folder-open"></i><p>ไม่มีหมวดหมู่</p></div>'; 
+    listDiv.innerHTML='<div class="empty-state"><i class="fas fa-list"></i><p>ไม่มีหมวดหมู่</p></div>'; 
     return; 
   }
   categories.forEach(c=>{
     const div = document.createElement("div");
     div.className="settings-item";
-    div.innerHTML=`<span>${c.name}</span>
+    div.innerHTML=`<span>${c.name}${c.code ? ` (${c.code})` : ''}</span>
       <div>
         <button class="danger action-btn" onclick="deleteCategory(${c.id})" title="ลบหมวดหมู่"><i class="fas fa-trash"></i></button>
-      </div>`;
-    listDiv.appendChild(div);
-  });
-}
-
-// Render type list in settings
-function renderTypeList(){
-  const listDiv = document.getElementById("typeList");
-  listDiv.innerHTML = "";
-  if(types.length===0){ 
-    listDiv.innerHTML='<div class="empty-state"><i class="fas fa-list"></i><p>ไม่มีประเภทสินค้า</p></div>'; 
-    return; 
-  }
-  types.forEach(t=>{
-    const div = document.createElement("div");
-    div.className="settings-item";
-    div.innerHTML=`<span>${t.name} (${t.code})</span>
-      <div>
-        <button class="danger action-btn" onclick="deleteType(${t.id})" title="ลบประเภท"><i class="fas fa-trash"></i></button>
       </div>`;
     listDiv.appendChild(div);
   });
@@ -908,23 +877,72 @@ function renderTypeList(){
 function openSettingsModal(){ 
   document.getElementById("settingsModal").style.display="block"; 
   loadTypes();
-  loadNotificationRules();
+  loadCategories();
 }
 
 function closeSettingsModal(){ 
   document.getElementById("settingsModal").style.display="none"; 
 }
 
-// Add category
-async function addCategory(){
-  const name = document.getElementById("newCategoryName").value.trim();
+// Add product type (ประเภทสินค้า) - ใส่ในตาราง type
+async function addType(){
+  const name = document.getElementById("newTypeName").value.trim();
   
   if(!name){ 
-    showStatus('กรุณากรอกชื่อหมวดหมู่', 'error');
+    showStatus('กรุณากรอกชื่อประเภทสินค้า', 'error');
     return; 
   }
   
-  const { data, error } = await client.from("categories").insert({name}).select();
+  const { data, error } = await client.from("type").insert({name}).select();
+  if(error){ 
+    showStatus('เกิดข้อผิดพลาดในการเพิ่มประเภทสินค้า: ' + (error.message || error), 'error');
+    console.error(error); 
+    return; 
+  }
+  
+  document.getElementById("newTypeName").value="";
+  showStatus('เพิ่มประเภทสินค้าเรียบร้อยแล้ว', 'success');
+  loadTypes();
+}
+
+// Delete product type (ประเภทสินค้า) - ลบจากตาราง type
+async function deleteType(id){
+  if(!confirm("ยืนยันการลบประเภทสินค้านี้? สินค้าที่อยู่ในประเภทนี้จะถูกกำหนดเป็นไม่มีประเภท")) return;
+  try {
+    // อัพเดตสินค้าที่อ้างอิง type นี้ให้เป็น null ก่อน
+    const { error: errUpdate } = await client.from('products').update({ type_id: null }).eq('type_id', id);
+    if (errUpdate) {
+      console.error('Error setting products type to null before delete:', errUpdate);
+      showStatus('ไม่สามารถปรับสินค้าก่อนลบประเภท: ' + (errUpdate.message || errUpdate), 'error');
+      return;
+    }
+    
+    const { error } = await client.from("type").delete().eq("id", id);
+    if(error){ 
+      showStatus('เกิดข้อผิดพลาดในการลบประเภทสินค้า: ' + (error.message || error), 'error');
+      console.error(error); 
+      return; 
+    }
+    showStatus('ลบประเภทสินค้าเรียบร้อยแล้ว', 'success');
+    loadTypes();
+    loadProducts();
+  } catch (err) {
+    console.error(err);
+    showStatus('เกิดข้อผิดพลาดในการลบประเภทสินค้า', 'error');
+  }
+}
+
+// Add category (หมวดหมู่/แบรนด์) - ใส่ในตาราง categories
+async function addCategory(){
+  const name = document.getElementById("newCategoryName").value.trim();
+  const code = document.getElementById("newCategoryCode").value.trim().toUpperCase();
+  
+  if(!name || !code){ 
+    showStatus('กรุณากรอกชื่อหมวดหมู่และรหัส', 'error');
+    return; 
+  }
+  
+  const { data, error } = await client.from("categories").insert({name, code}).select();
   if(error){ 
     showStatus('เกิดข้อผิดพลาดในการเพิ่มหมวดหมู่: ' + (error.message || error), 'error');
     console.error(error); 
@@ -932,21 +950,24 @@ async function addCategory(){
   }
   
   document.getElementById("newCategoryName").value="";
+  document.getElementById("newCategoryCode").value="";
   showStatus('เพิ่มหมวดหมู่เรียบร้อยแล้ว', 'success');
   loadCategories();
 }
 
-// Delete category
+// Delete category (หมวดหมู่/แบรนด์) - ลบจากตาราง categories
 async function deleteCategory(id){
   if(!confirm("ยืนยันการลบหมวดหมู่นี้? สินค้าที่อยู่ในหมวดหมู่นี้จะถูกกำหนดเป็นไม่มีหมวดหมู่")) return;
   try {
+    // อัพเดตสินค้าที่อ้างอิง category นี้ให้เป็น null ก่อน
     const { error: errUpdate } = await client.from('products').update({ category_id: null }).eq('category_id', id);
     if (errUpdate) {
       console.error('Error setting products category to null before delete:', errUpdate);
       showStatus('ไม่สามารถปรับสินค้าก่อนลบหมวดหมู่: ' + (errUpdate.message || errUpdate), 'error');
       return;
     }
-    const { error } = await client.from("categories").delete().eq("id",id);
+    
+    const { error } = await client.from("categories").delete().eq("id", id);
     if(error){ 
       showStatus('เกิดข้อผิดพลาดในการลบหมวดหมู่: ' + (error.message || error), 'error');
       console.error(error); 
@@ -958,77 +979,6 @@ async function deleteCategory(id){
   } catch (err) {
     console.error(err);
     showStatus('เกิดข้อผิดพลาดในการลบหมวดหมู่', 'error');
-  }
-}
-
-// Add product type
-async function addType(){
-  const name = document.getElementById("newTypeName").value.trim();
-  const code = document.getElementById("newTypeCode").value.trim().toUpperCase();
-  
-  if(!name || !code){ 
-    showStatus('กรุณากรอกชื่อประเภทและรหัส', 'error');
-    return; 
-  }
-  
-  try {
-    const { data, error } = await client.from("types").insert({name, code}).select();
-    if(error){ 
-      if (error.code === 'PGRST205') {
-        const storedTypes = JSON.parse(localStorage.getItem('product_types') || '[]');
-        const newType = {
-          id: Date.now(),
-          name: name,
-          code: code,
-          created_at: new Date().toISOString()
-        };
-        storedTypes.push(newType);
-        localStorage.setItem('product_types', JSON.stringify(storedTypes));
-        
-        document.getElementById("newTypeName").value="";
-        document.getElementById("newTypeCode").value="";
-        showStatus('เพิ่มประเภทเรียบร้อยแล้ว (เก็บข้อมูลชั่วคราว)', 'success');
-        loadTypes();
-        return;
-      }
-      showStatus('เกิดข้อผิดพลาดในการเพิ่มประเภท: ' + (error.message || error), 'error');
-      console.error(error); 
-      return; 
-    }
-    
-    document.getElementById("newTypeName").value="";
-    document.getElementById("newTypeCode").value="";
-    showStatus('เพิ่มประเภทเรียบร้อยแล้ว', 'success');
-    loadTypes();
-  } catch (err) {
-    console.error(err);
-    showStatus('เกิดข้อผิดพลาดในการเพิ่มประเภท', 'error');
-  }
-}
-
-// Delete product type
-async function deleteType(id){
-  if(!confirm("ยืนยันการลบประเภทนี้?")) return;
-  try {
-    const { error } = await client.from("types").delete().eq("id",id);
-    if(error){ 
-      if (error.code === 'PGRST205' || error.code === '42P01') {
-        const storedTypes = JSON.parse(localStorage.getItem('product_types') || '[]');
-        const updatedTypes = storedTypes.filter(t => t.id !== id);
-        localStorage.setItem('product_types', JSON.stringify(updatedTypes));
-        showStatus('ลบประเภทเรียบร้อยแล้ว', 'success');
-        loadTypes();
-        return;
-      }
-      showStatus('เกิดข้อผิดพลาดในการลบประเภท: ' + (error.message || error), 'error');
-      console.error(error); 
-      return; 
-    }
-    showStatus('ลบประเภทเรียบร้อยแล้ว', 'success');
-    loadTypes();
-  } catch (err) {
-    console.error(err);
-    showStatus('เกิดข้อผิดพลาดในการลบประเภท', 'error');
   }
 }
 
@@ -1072,35 +1022,38 @@ async function uploadImage(file) {
   }
 }
 
-// สร้างรหัสสินค้าอัตโนมัติ
+// สร้างรหัสสินค้าอัตโนมัติจากรหัสหมวดหมู่
 async function generateProductCode() {
-  const typeSelect = document.getElementById("type");
-  const typeId = typeSelect.value;
+  const categorySelect = document.getElementById("category");
+  const categoryId = categorySelect.value;
   
-  if (!typeId) {
+  if (!categoryId) {
     document.getElementById("product_code").value = "";
     return;
   }
   
-  const selectedType = types.find(t => t.id == typeId);
-  if (!selectedType) return;
+  const selectedCategory = categories.find(c => c.id == categoryId);
+  if (!selectedCategory || !selectedCategory.code) {
+    document.getElementById("product_code").value = "";
+    return;
+  }
   
   try {
-    // นับจำนวนสินค้าในประเภทนี้
+    // นับจำนวนสินค้าในหมวดหมู่นี้
     const { count, error } = await client
       .from('products')
       .select('*', { count: 'exact', head: true })
-      .eq('type_id', typeId);
+      .eq('category_id', categoryId);
     
     if (error) {
       console.error('Error counting products:', error);
       return;
     }
     
-    // สร้างรหัส: รหัสประเภท + ลำดับ (เช่น PA001, CD012)
+    // สร้างรหัส: รหัสหมวดหมู่ + ลำดับ (เช่น MY001, NV012)
     const nextNumber = (count || 0) + 1;
     const paddedNumber = nextNumber.toString().padStart(3, '0');
-    const productCode = `${selectedType.code}${paddedNumber}`;
+    const productCode = `${selectedCategory.code}${paddedNumber}`;
     
     document.getElementById("product_code").value = productCode;
   } catch (err) {
@@ -1119,8 +1072,8 @@ async function addItem(){
   const product_code = document.getElementById("product_code").value;
   const imageInput = document.getElementById("image");
 
-  if(!name || isNaN(price) || isNaN(stock_quantity) || !category_id || !type_id){
-    showStatus('กรุณากรอกข้อมูลให้ครบถ้วน', 'error');
+  if(!name || isNaN(price) || isNaN(stock_quantity)){
+    showStatus('กรุณากรอกข้อมูลให้ครบถ้วน (ชื่อ, ราคา, จำนวน)', 'error');
     return;
   }
 
@@ -1137,7 +1090,14 @@ async function addItem(){
 
   try {
     const { data, error } = await client.from('products').insert([{
-      name, price, stock: stock_quantity, description, category_id, type_id, image_url, product_code
+      name, 
+      price, 
+      stock: stock_quantity, 
+      description, 
+      category_id: category_id || null, 
+      type_id: type_id || null, 
+      image_url, 
+      product_code
     }]).select();
 
     if(error){
@@ -1159,7 +1119,7 @@ async function addItem(){
 async function editItem(id){
   try {
     const { data, error } = await client.from('products')
-      .select('*, categories(name)')
+      .select('*, type(name), categories(name, code)')
       .eq('id', id)
       .single();
 
@@ -1174,7 +1134,7 @@ async function editItem(id){
     document.getElementById("price").value = data.price;
     document.getElementById("stock_quantity").value = data.stock;
     document.getElementById("description").value = data.description || '';
-    document.getElementById("category").value = data.category_id;
+    document.getElementById("category").value = data.category_id || '';
     document.getElementById("type").value = data.type_id || '';
     
     if(data.image_url){
@@ -1210,8 +1170,8 @@ async function updateItem(){
   const product_code = document.getElementById("product_code").value;
   const imageInput = document.getElementById("image");
 
-  if(!name || isNaN(price) || isNaN(stock_quantity) || !category_id || !type_id){
-    showStatus('กรุณากรอกข้อมูลให้ครบถ้วน', 'error');
+  if(!name || isNaN(price) || isNaN(stock_quantity)){
+    showStatus('กรุณากรอกข้อมูลให้ครบถ้วน (ชื่อ, ราคา, จำนวน)', 'error');
     return;
   }
 
@@ -1229,7 +1189,15 @@ async function updateItem(){
   try {
     const { data, error } = await client.from('products')
       .update({
-        name, price, stock: stock_quantity, description, category_id, type_id, image_url, product_code, updated_at: new Date()
+        name, 
+        price, 
+        stock: stock_quantity, 
+        description, 
+        category_id: category_id || null, 
+        type_id: type_id || null, 
+        image_url, 
+        product_code, 
+        updated_at: new Date()
       })
       .eq('id', editId);
 
@@ -1285,7 +1253,10 @@ function clearForm(){
 // Load products from Supabase
 async function loadProducts(){
   try {
-    const res = await client.from('products').select(`*, categories(name)`).order('created_at', { ascending: false });
+    const res = await client.from('products')
+      .select(`*, type(name), categories(name, code)`)
+      .order('created_at', { ascending: false });
+    
     if (res.error) {
       showStatus('เกิดข้อผิดพลาดในการโหลดข้อมูลสินค้า: ' + (res.error.message || res.error), 'error');
       return;
@@ -1327,8 +1298,8 @@ function renderProducts(products){
   });
   
   products.forEach((item, index)=>{
-    const type = types.find(t => t.id == item.type_id);
-    const typeName = type ? `${type.name} (${type.code})` : '-';
+    const typeName = item.type ? item.type.name : '-';
+    const categoryName = item.categories ? item.categories.name : '-';
     
     const tr = document.createElement("tr");
     tr.innerHTML = `
@@ -1348,8 +1319,8 @@ function renderProducts(products){
           ${item.stock}
         </span>
       </td>
-      <td>${item.categories?.name || '-'}</td>
       <td>${typeName}</td>
+      <td>${categoryName}</td>
       <td>
         <div class="action-buttons">
           <button class="warning action-btn" onclick="editItem(${item.id})" title="แก้ไข">
@@ -1372,16 +1343,16 @@ function renderProducts(products){
 function viewDetails(id) {
   const product = dataList.find(p => p.id === id);
   if (product) {
-    const type = types.find(t => t.id == product.type_id);
-    const typeName = type ? `${type.name} (${type.code})` : '-';
+    const typeName = product.type ? product.type.name : '-';
+    const categoryName = product.categories ? product.categories.name : '-';
     
     let details = `
       <strong>รหัสสินค้า:</strong> ${product.product_code || '-'}<br>
       <strong>ชื่อสินค้า:</strong> ${product.name}<br>
       <strong>ราคา:</strong> ${Number(product.price).toFixed(2)} บาท<br>
       <strong>จำนวนในสต็อก:</strong> ${product.stock}<br>
-      <strong>หมวดหมู่:</strong> ${product.categories?.name || '-'}<br>
       <strong>ประเภท:</strong> ${typeName}<br>
+      <strong>หมวดหมู่/แบรนด์:</strong> ${categoryName}<br>
     `;
     
     if (product.description) {
@@ -1404,6 +1375,7 @@ function searchProducts(){
     (p.name && p.name.toLowerCase().includes(searchText)) ||
     (p.product_code && p.product_code.toLowerCase().includes(searchText)) ||
     (p.description && p.description.toLowerCase().includes(searchText)) ||
+    (p.type?.name && p.type.name.toLowerCase().includes(searchText)) ||
     (p.categories?.name && p.categories.name.toLowerCase().includes(searchText))
   );
   
@@ -1422,7 +1394,7 @@ async function updateOldProductCodes() {
     // ดึงสินค้าทั้งหมดที่ไม่มีรหัส
     const { data: products, error } = await client
       .from('products')
-      .select('*')
+      .select('*, categories(code)')
       .is('product_code', null);
     
     if (error) throw error;
@@ -1433,21 +1405,21 @@ async function updateOldProductCodes() {
     
     // สร้างรหัสสำหรับแต่ละสินค้า
     for (const product of products) {
-      const type = types.find(t => t.id == product.type_id);
-      if (!type) continue;
+      const category = categories.find(c => c.id == product.category_id);
+      if (!category || !category.code) continue;
       
-      // หาลำดับล่าสุดของประเภทนี้ (สินค้าที่มีรหัสแล้ว)
+      // หาลำดับล่าสุดของหมวดหมู่นี้ (สินค้าที่มีรหัสแล้ว)
       const { count, error: countError } = await client
         .from('products')
         .select('*', { count: 'exact', head: true })
-        .eq('type_id', product.type_id)
+        .eq('category_id', product.category_id)
         .not('product_code', 'is', null);
       
       if (countError) continue;
       
       const nextNumber = (count || 0) + 1;
       const paddedNumber = nextNumber.toString().padStart(3, '0');
-      const productCode = `${type.code}${paddedNumber}`;
+      const productCode = `${category.code}${paddedNumber}`;
       
       // อัพเดตสินค้า
       const { error: updateError } = await client
@@ -1488,15 +1460,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
   
-  // เมื่อเลือกประเภทสินค้า ให้สร้างรหัสอัตโนมัติ
-  const typeSelect = document.getElementById("type");
-  if (typeSelect) {
-    typeSelect.addEventListener('change', generateProductCode);
+  // เมื่อเลือกหมวดหมู่สินค้า ให้สร้างรหัสอัตโนมัติ
+  const categorySelect = document.getElementById("category");
+  if (categorySelect) {
+    categorySelect.addEventListener('change', generateProductCode);
   }
   
   // Load initial data
-  loadCategories();
   loadTypes();
+  loadCategories();
   loadProducts();
   
   // เรียกใช้ฟังก์ชันปรับปรุงรหัสสินค้าเก่า
